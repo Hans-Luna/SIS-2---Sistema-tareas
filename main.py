@@ -1,6 +1,14 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from conexion import conectar
+from pantallas_paneles import CrearCurso
+from funciones_paneles import (
+    crear_curso,
+    crear_tarea,
+    calificar_tareas,
+    ver_tareas,
+    entregar_tarea
+)
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -11,11 +19,12 @@ ADMIN_PASSWORD = "admin123"
 
 
 class App(ctk.CTk):
+
     def __init__(self):
         super().__init__()
         self.title("Sistema de Tareas")
         self.geometry("900x600")
-
+        self.usuario_actual = None
         self.frame_actual = None
         self.mostrar_inicio()
 
@@ -38,13 +47,25 @@ class App(ctk.CTk):
 
         if tipo == "estudiante":
             self.frame_actual = PanelEstudiante(self)
+
         elif tipo == "docente":
             self.frame_actual = PanelDocente(self)
+
         elif tipo == "admin":
             self.frame_actual = PanelAdmin(self)
 
         self.frame_actual.pack(expand=True, fill="both")
 
+    def mostrar_crear_curso(self):
+        self.limpiar_frame()
+        self.frame_actual = CrearCurso(self)
+        self.frame_actual.pack(expand=True, fill="both")
+
+    def mostrar_crear_tarea(self):
+        self.limpiar_frame()
+        from pantallas_paneles import CrearTarea
+        self.frame_actual = CrearTarea(self)
+        self.frame_actual.pack(expand=True, fill="both")
 
 
 
@@ -117,6 +138,10 @@ class Login(ctk.CTkFrame):
             """, (email, password, self.tipo))
 
             resultado = cursor.fetchone()
+
+            if resultado:
+                self.master.usuario_actual = resultado 
+                self.master.mostrar_panel(self.tipo)
             conexion.close()
 
             if resultado:
@@ -133,8 +158,8 @@ class PanelEstudiante(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="Mis tareas", font=("Arial", 25)).pack(pady=20)
 
-        ctk.CTkButton(self, text="Ver tareas").pack(pady=10)
-        ctk.CTkButton(self, text="Entregar tarea").pack(pady=10)
+        ctk.CTkButton(self, text="Ver tareas", command=ver_tareas).pack(pady=10)
+        ctk.CTkButton(self, text="Entregar tarea", command=entregar_tarea).pack(pady=10)
 
         ctk.CTkButton(self, text="Cerrar sesión",
                       command=master.mostrar_inicio).pack(side="bottom", pady=10)
@@ -148,9 +173,9 @@ class PanelDocente(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="Gestión de cursos", font=("Arial", 25)).pack(pady=20)
 
-        ctk.CTkButton(self, text="Crear curso").pack(pady=10)
-        ctk.CTkButton(self, text="Crear tarea").pack(pady=10)
-        ctk.CTkButton(self, text="Calificar tareas").pack(pady=10)
+        ctk.CTkButton(self, text="Crear curso", command=master.mostrar_crear_curso).pack(pady=10)
+        ctk.CTkButton(self, text="Crear tarea", command=master.mostrar_crear_tarea).pack(pady=10)
+        ctk.CTkButton(self, text="Calificar tareas", command=calificar_tareas).pack(pady=10)
 
         ctk.CTkButton(self, text="Cerrar sesión",
                       command=master.mostrar_inicio).pack(side="bottom", pady=10)

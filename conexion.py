@@ -14,7 +14,7 @@ def conectar():
         ssl_path = ruta_recurso("certificado/ca.pem")
 
         conexion = mysql.connector.connect(
-            #host="host",
+            #host="mysql-28ecb1f5-est-86f3.d.aivencloud.com",
             #user="avnadmin",
             #port=18270,
             #password="password",

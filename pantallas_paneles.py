@@ -2,6 +2,8 @@ import customtkinter as ctk
 from tkinter import messagebox
 from conexion import conectar
 from funciones_paneles import crear_tarea
+from funciones_paneles import ver_tareas
+from funciones_paneles import entregar_tarea
 from datetime import datetime
 
 
@@ -118,3 +120,71 @@ class CrearTarea(ctk.CTkFrame):
             self.titulo.delete(0, "end")
             self.descripcion.delete(0, "end")
             self.fecha.delete(0, "end")
+
+class VerTareas(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        ctk.CTkLabel(self, text="Listado de Tareas", font=("Arial", 25)).pack(pady=20)
+
+        tareas = ver_tareas()
+
+        if not tareas:
+            ctk.CTkLabel(self, text="No hay tareas disponibles").pack(pady=10)
+        else:
+            for t in tareas:
+                texto = f"{t[1]} | Fecha: {t[2]} | Curso: {t[3]}"
+                ctk.CTkLabel(self, text=texto).pack(anchor="w", padx=20)
+
+        ctk.CTkButton(self, text="Volver",
+                      command=lambda: master.mostrar_panel("estudiante")).pack(pady=20)
+
+class EntregarTarea(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        ctk.CTkLabel(self, text="Entregar Tarea", font=("Arial", 25)).pack(pady=20)
+
+        
+        self.tareas_dict = self.cargar_tareas()
+
+        self.combo_tarea = ctk.CTkOptionMenu(self, values=list(self.tareas_dict.keys()))
+        self.combo_tarea.pack(pady=10)
+
+        
+        self.descripcion = ctk.CTkEntry(self, placeholder_text="Descripción")
+        self.descripcion.pack(pady=10)
+
+       
+        ctk.CTkButton(self, text="Adjuntar archivo").pack(pady=10)
+
+        
+        ctk.CTkButton(self, text="Entregar", command=self.entregar).pack(pady=10)
+
+       
+        ctk.CTkButton(self, text="Volver",
+                      command=lambda: master.mostrar_panel("estudiante")).pack(pady=10)
+
+    def cargar_tareas(self):
+        conexion = conectar()
+        cursor = conexion.cursor()
+
+        cursor.execute("SELECT id_tarea, titulo FROM tarea")
+        datos = cursor.fetchall()
+
+        conexion.close()
+
+        return {titulo: id for id, titulo in datos}
+
+    def entregar(self):
+        nombre_tarea = self.combo_tarea.get()
+        id_tarea = self.tareas_dict.get(nombre_tarea)
+        descripcion = self.descripcion.get()
+
+        exito = entregar_tarea(id_tarea, descripcion)
+
+        if exito:
+            messagebox.showinfo("Éxito", "Tarea entregada")
+
+           
+            self.descripcion.delete(0, "end")

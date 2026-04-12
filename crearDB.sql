@@ -47,7 +47,10 @@ CREATE TABLE IF NOT EXISTS tarea (
 -- =====================================
 CREATE TABLE IF NOT EXISTS entrega (
     id_entrega INT AUTO_INCREMENT PRIMARY KEY,
+
     archivo VARCHAR(255),
+    descripcion TEXT,
+
     fecha_entrega DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(50) DEFAULT 'enviado',
     nota DECIMAL(5,2),

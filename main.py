@@ -67,6 +67,18 @@ class App(ctk.CTk):
         self.frame_actual = CrearTarea(self)
         self.frame_actual.pack(expand=True, fill="both")
 
+    def mostrar_ver_tareas(self):
+        self.limpiar_frame()
+        from pantallas_paneles import VerTareas
+        self.frame_actual = VerTareas(self)
+        self.frame_actual.pack(expand=True, fill="both")
+    
+    def mostrar_entregar_tarea(self):
+        self.limpiar_frame()
+        from pantallas_paneles import EntregarTarea
+        self.frame_actual = EntregarTarea(self)
+        self.frame_actual.pack(expand=True, fill="both")
+
 
 
 class PantallaInicio(ctk.CTkFrame):
@@ -158,11 +170,9 @@ class PanelEstudiante(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="Mis tareas", font=("Arial", 25)).pack(pady=20)
 
-        ctk.CTkButton(self, text="Ver tareas", command=ver_tareas).pack(pady=10)
-        ctk.CTkButton(self, text="Entregar tarea", command=entregar_tarea).pack(pady=10)
-
-        ctk.CTkButton(self, text="Cerrar sesión",
-                      command=master.mostrar_inicio).pack(side="bottom", pady=10)
+        ctk.CTkButton(self, text="Ver tareas", command=master.mostrar_ver_tareas).pack(pady=10)
+        ctk.CTkButton(self, text="Entregar tarea", command=master.mostrar_entregar_tarea).pack(pady=10)
+        ctk.CTkButton(self, text="Cerrar sesión", command=master.mostrar_inicio).pack(side="bottom", pady=10)
 
 
 

@@ -68,8 +68,53 @@ def calificar_tareas():
 
 
 def ver_tareas():
-    messagebox.showinfo("Info", "Función ver tareas (pendiente)")
+    conexion = conectar()
 
+    if conexion is None or not conexion.is_connected():
+        return None
 
-def entregar_tarea():
-    messagebox.showinfo("Info", "Función entregar tarea (pendiente)")
+    cursor = conexion.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT t.id_tarea, t.titulo, t.fecha_limite, c.nombre_curso
+            FROM tarea t
+            JOIN curso c ON t.id_curso = c.id_curso
+        """)
+        return cursor.fetchall()
+
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+    finally:
+        conexion.close()
+
+def entregar_tarea(id_tarea, descripcion):
+    conexion = conectar()
+
+    if conexion is None or not conexion.is_connected():
+        messagebox.showerror("Error", "No hay conexión a la BD")
+        return False
+
+    cursor = conexion.cursor()
+
+    try:
+        if not id_tarea:
+            messagebox.showerror("Error", "Debe seleccionar una tarea")
+            return False
+
+        cursor.execute("""
+            INSERT INTO entrega (id_tarea, descripcion)
+            VALUES (%s, %s)
+        """, (id_tarea, descripcion))
+
+        conexion.commit()
+        return True
+
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo entregar tarea:\n{e}")
+        return False
+
+    finally:
+        conexion.close()

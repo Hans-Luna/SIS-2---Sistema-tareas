@@ -1,15 +1,23 @@
 import customtkinter as ctk
 from tkinter import messagebox
 from conexion import conectar
+import os
 from pantallas_paneles import CrearCurso
+from pantallas_paneles import CrearTarea
+from pantallas_paneles import VerTareas
+from pantallas_paneles import EntregarTarea
 from funciones_paneles import (
     crear_curso,
     crear_tarea,
-    calificar_tareas,
     ver_tareas,
     entregar_tarea
 )
-
+from pantallas_paneles import (
+    SeleccionarCursoCalificar,
+    ListaTareasCalificar,
+    ListaEntregas,
+    CalificarEntrega
+)
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -27,6 +35,7 @@ class App(ctk.CTk):
         self.usuario_actual = None
         self.frame_actual = None
         self.mostrar_inicio()
+        self.protocol("WM_DELETE_WINDOW", self.al_cerrar)
 
     def limpiar_frame(self):
         if self.frame_actual:
@@ -62,23 +71,44 @@ class App(ctk.CTk):
         self.frame_actual.pack(expand=True, fill="both")
 
     def mostrar_crear_tarea(self):
-        self.limpiar_frame()
-        from pantallas_paneles import CrearTarea
+        self.limpiar_frame()        
         self.frame_actual = CrearTarea(self)
         self.frame_actual.pack(expand=True, fill="both")
 
     def mostrar_ver_tareas(self):
-        self.limpiar_frame()
-        from pantallas_paneles import VerTareas
+        self.limpiar_frame()        
         self.frame_actual = VerTareas(self)
         self.frame_actual.pack(expand=True, fill="both")
     
     def mostrar_entregar_tarea(self):
-        self.limpiar_frame()
-        from pantallas_paneles import EntregarTarea
+        self.limpiar_frame()     
         self.frame_actual = EntregarTarea(self)
         self.frame_actual.pack(expand=True, fill="both")
 
+    def mostrar_calificar_curso(self):
+        self.limpiar_frame()
+        self.frame_actual = SeleccionarCursoCalificar(self)
+        self.frame_actual.pack(expand=True, fill="both")
+
+    def mostrar_tareas_calificar(self, id_curso):
+        self.limpiar_frame()
+        self.frame_actual = ListaTareasCalificar(self, id_curso)
+        self.frame_actual.pack(expand=True, fill="both")
+    
+    def mostrar_entregas(self, id_tarea):
+        self.limpiar_frame()
+        self.frame_actual = ListaEntregas(self, id_tarea)
+        self.frame_actual.pack(expand=True, fill="both")
+
+
+    def mostrar_calificar(self, id_entrega, id_tarea):
+        self.limpiar_frame()
+        self.frame_actual = CalificarEntrega(self, id_entrega, id_tarea)
+        self.frame_actual.pack(expand=True, fill="both")
+    
+    def al_cerrar(self):
+        limpiar_temporales()
+        self.destroy()
 
 
 class PantallaInicio(ctk.CTkFrame):
@@ -87,14 +117,11 @@ class PantallaInicio(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="Sistema de Tareas", font=("Arial", 30)).pack(pady=40)
 
-        ctk.CTkButton(self, text="Ingresar como Estudiante",
-                      command=lambda: master.mostrar_login("estudiante")).pack(pady=10)
+        ctk.CTkButton(self, text="Ingresar como Estudiante", command=lambda: master.mostrar_login("estudiante")).pack(pady=10)
 
-        ctk.CTkButton(self, text="Ingresar como Docente",
-                      command=lambda: master.mostrar_login("docente")).pack(pady=10)
+        ctk.CTkButton(self, text="Ingresar como Docente", command=lambda: master.mostrar_login("docente")).pack(pady=10)
 
-        ctk.CTkButton(self, text="Admin", width=80,
-                      command=lambda: master.mostrar_login("admin")).pack(side="bottom", pady=10)
+        ctk.CTkButton(self, text="Admin", width=80, command=lambda: master.mostrar_login("admin")).pack(side="bottom", pady=10)
 
 
 
@@ -185,10 +212,8 @@ class PanelDocente(ctk.CTkFrame):
 
         ctk.CTkButton(self, text="Crear curso", command=master.mostrar_crear_curso).pack(pady=10)
         ctk.CTkButton(self, text="Crear tarea", command=master.mostrar_crear_tarea).pack(pady=10)
-        ctk.CTkButton(self, text="Calificar tareas", command=calificar_tareas).pack(pady=10)
-
-        ctk.CTkButton(self, text="Cerrar sesión",
-                      command=master.mostrar_inicio).pack(side="bottom", pady=10)
+        ctk.CTkButton(self, text="Calificar tareas", command=master.mostrar_calificar_curso).pack(pady=10)
+        ctk.CTkButton(self, text="Cerrar sesión", command=master.mostrar_inicio).pack(side="bottom", pady=10)
 
 
 
@@ -214,8 +239,7 @@ class PanelAdmin(ctk.CTkFrame):
         ctk.CTkButton(self, text="Crear usuario", command=self.crear_usuario).pack(pady=10)
 
         
-        ctk.CTkButton(self, text="Cerrar sesión",
-                      command=master.mostrar_inicio).pack(side="bottom", pady=10)
+        ctk.CTkButton(self, text="Cerrar sesión", command=master.mostrar_inicio).pack(side="bottom", pady=10)
 
     def crear_usuario(self):
         conexion = conectar()
@@ -235,6 +259,14 @@ class PanelAdmin(ctk.CTkFrame):
         conexion.close()
 
         messagebox.showinfo("Éxito", "Usuario creado")
+
+def limpiar_temporales():
+    for archivo in os.listdir():
+        if archivo.startswith("temp_"):
+            try:
+                os.remove(archivo)
+            except:
+                pass
 
 
 

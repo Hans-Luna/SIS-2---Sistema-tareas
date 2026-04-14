@@ -97,9 +97,11 @@ def obtener_entregas_por_tarea(id_tarea):
     cursor = conexion.cursor()
 
     cursor.execute("""
-    SELECT id_entrega, nombre_archivo, descripcion, id_usuario
-    FROM entrega
-    WHERE id_tarea=%s""", (id_tarea,))
+        SELECT e.id_entrega, e.nombre_archivo, e.descripcion, u.nombre
+        FROM entrega e
+        JOIN usuario u ON e.id_usuario = u.id_usuario
+        WHERE e.id_tarea=%s
+    """, (id_tarea,))
 
     datos = cursor.fetchall()
     conexion.close()
@@ -112,10 +114,12 @@ def guardar_calificacion(id_entrega, nota):
     cursor = conexion.cursor()
 
     try:
-        cursor.execute(
-            "UPDATE entrega SET nota=%s WHERE id_entrega=%s",
-            (nota, id_entrega)
-        )
+        cursor.execute("""
+            UPDATE entrega
+            SET nota=%s,
+                estado='calificado'
+            WHERE id_entrega=%s
+        """, (nota, id_entrega))
 
         conexion.commit()
         return True

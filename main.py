@@ -6,6 +6,7 @@ from pantallas_paneles import CrearCurso
 from pantallas_paneles import CrearTarea
 from pantallas_paneles import VerTareas
 from pantallas_paneles import EntregarTarea
+from pantallas_paneles import MisEntregas
 from funciones_paneles import (
     crear_curso,
     crear_tarea,
@@ -110,6 +111,11 @@ class App(ctk.CTk):
         limpiar_temporales()
         self.destroy()
 
+    def mostrar_mis_entregas(self):
+        self.limpiar_frame()
+        self.frame_actual = MisEntregas(self)
+        self.frame_actual.pack(expand=True, fill="both")
+
 
 class PantallaInicio(ctk.CTkFrame):
     def __init__(self, master):
@@ -199,7 +205,9 @@ class PanelEstudiante(ctk.CTkFrame):
 
         ctk.CTkButton(self, text="Ver tareas", command=master.mostrar_ver_tareas).pack(pady=10)
         ctk.CTkButton(self, text="Entregar tarea", command=master.mostrar_entregar_tarea).pack(pady=10)
+        ctk.CTkButton(self, text="Mis entregas", command=self.master.mostrar_mis_entregas).pack(pady=10)
         ctk.CTkButton(self, text="Cerrar sesión", command=master.mostrar_inicio).pack(side="bottom", pady=10)
+        
 
 
 

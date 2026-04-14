@@ -16,6 +16,7 @@ from funciones_paneles import (
 )
 
 
+
 class CrearCurso(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -30,10 +31,14 @@ class CrearCurso(ctk.CTkFrame):
         ctk.CTkButton(self, text="Volver", command=lambda: master.mostrar_panel("docente")).pack(pady=10)
 
     def guardar(self): 
-        nombre = self.nombre.get()
+        nombre = self.nombre.get().strip()
 
         if not nombre:
-            messagebox.showerror("Error", "Ingrese nombre")
+            messagebox.showerror("Error", "El nombre no puede estar vacío")
+            return
+
+        if len(nombre) < 3:
+            messagebox.showerror("Error", "El nombre debe tener al menos 3 caracteres")
             return
 
         conexion = conectar()
@@ -131,16 +136,75 @@ class VerTareas(ctk.CTkFrame):
 
         ctk.CTkLabel(self, text="Listado de Tareas", font=("Arial", 25)).pack(pady=20)
 
-        tareas = ver_tareas()
+       
+        conexion = conectar()
+        cursor = conexion.cursor()
+
+        cursor.execute("SELECT id_curso, nombre_curso FROM curso")
+        cursos = cursor.fetchall()
+        conexion.close()
+
+        
+        self.cursos_dict = {"Todos": None}
+        for id_curso, nombre in cursos:
+            self.cursos_dict[nombre] = id_curso
+
+       
+        self.combo = ctk.CTkOptionMenu(self, values=list(self.cursos_dict.keys()))
+        self.combo.pack(pady=10)
+
+       
+        ctk.CTkButton(self, text="Filtrar", command=self.cargar_tareas).pack(pady=10)
+
+        
+        self.frame_tareas = ctk.CTkFrame(self)
+        self.frame_tareas.pack(fill="both", expand=True)
+
+       
+        self.cargar_tareas()
+
+        
+        ctk.CTkButton(
+            self,
+            text="Volver",
+            command=lambda: master.mostrar_panel("estudiante")
+        ).pack(pady=20)
+
+    def cargar_tareas(self):
+        
+        for widget in self.frame_tareas.winfo_children():
+            widget.destroy()
+
+        nombre = self.combo.get()
+        id_curso = self.cursos_dict.get(nombre)
+
+        conexion = conectar()
+        cursor = conexion.cursor()
+
+       
+        if id_curso is None:
+            cursor.execute("""
+                SELECT t.titulo, t.fecha_limite, c.nombre_curso
+                FROM tarea t
+                JOIN curso c ON t.id_curso = c.id_curso
+            """)
+        else:
+            cursor.execute("""
+                SELECT t.titulo, t.fecha_limite, c.nombre_curso
+                FROM tarea t
+                JOIN curso c ON t.id_curso = c.id_curso
+                WHERE t.id_curso=%s
+            """, (id_curso,))
+
+        tareas = cursor.fetchall()
+        conexion.close()
 
         if not tareas:
-            ctk.CTkLabel(self, text="No hay tareas disponibles").pack(pady=10)
+            ctk.CTkLabel(self.frame_tareas, text="No hay tareas").pack(pady=10)
         else:
-            for t in tareas:
-                texto = f"{t[1]} | Fecha: {t[2]} | Curso: {t[3]}"
-                ctk.CTkLabel(self, text=texto).pack(anchor="w", padx=20)
-
-        ctk.CTkButton(self, text="Volver", command=lambda: master.mostrar_panel("estudiante")).pack(pady=20)
+            for titulo, fecha, curso in tareas:
+                texto = f"{titulo} | Fecha: {fecha} | Curso: {curso}"
+                ctk.CTkLabel(self.frame_tareas, text=texto).pack(anchor="w", padx=20)
 
 class EntregarTarea(ctk.CTkFrame):
     def __init__(self, master):
@@ -174,15 +238,23 @@ class EntregarTarea(ctk.CTkFrame):
     
 
     def seleccionar_archivo(self):
-        archivo = filedialog.askopenfilename(
-            filetypes=[("Archivos", "*.pdf *.docx *.doc")]
-        )
+        archivo = filedialog.askopenfilename()
+
         if archivo:
+       
+            if not archivo.endswith((".pdf", ".docx", ".doc")):
+                messagebox.showerror("Error", "Formato no permitido")
+                return
+
+        
+            tamaño = os.path.getsize(archivo)
+            if tamaño > 5 * 1024 * 1024:
+                messagebox.showerror("Error", "Archivo demasiado grande (máx 5MB)")
+                return
+
             self.ruta_archivo = archivo
 
             nombre = os.path.basename(archivo)
-
-        
             self.label_archivo.configure(text=f"Archivo: {nombre}")
 
     def cargar_tareas(self):
@@ -268,7 +340,6 @@ class ListaEntregas(ctk.CTkFrame):
             frame = ctk.CTkFrame(self)
             frame.pack(pady=5, fill="x", padx=20)
 
-            info = f"{usuario}\n{descripcion}\nArchivo: {nombre_archivo}"
             ctk.CTkLabel(frame, text=info, justify="left").pack(side="left", padx=10)
 
             ctk.CTkButton(frame, text="Abrir", command=lambda i=id_entrega: self.abrir_archivo(i)).pack(side="right", padx=5)
@@ -324,7 +395,7 @@ class CalificarEntrega(ctk.CTkFrame):
         self.id_tarea = id_tarea
 
         ctk.CTkLabel(self, text="Calificar", font=("Arial", 25)).pack(pady=20)
-
+        
         self.nota = ctk.CTkEntry(self, placeholder_text="Nota")
         self.nota.pack(pady=10)
 
@@ -333,11 +404,60 @@ class CalificarEntrega(ctk.CTkFrame):
         ctk.CTkButton(self, text="Volver", command=lambda: master.mostrar_entregas(self.id_tarea)).pack(pady=10)
 
     def guardar(self):
-        nota = self.nota.get()
+        try:
+            nota = int(self.nota.get())
+        except ValueError:
+            messagebox.showerror("Error", "Ingrese una nota válida")
+            return
 
-        if guardar_calificacion(self.id_entrega, nota):
+        if nota < 0 or nota > 100:
+            messagebox.showerror("Error", "Nota inválida (0-100)")
+            return
+
+        exito = guardar_calificacion(self.id_entrega, nota)
+
+        if exito:
             messagebox.showinfo("Éxito", "Nota guardada")
+
+       
+            self.nota.delete(0, "end")
+
+      
+            self.master.mostrar_entregas(self.id_tarea)
+
+
+class MisEntregas(ctk.CTkFrame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        ctk.CTkLabel(self, text="Mis Entregas", font=("Arial", 25)).pack(pady=20)
+
+        id_usuario = master.usuario_actual[0]
+
+        conexion = conectar()
+        cursor = conexion.cursor()
+
+        cursor.execute("""
+            SELECT t.titulo, c.nombre_curso, e.descripcion, e.nota
+            FROM entrega e
+            JOIN tarea t ON e.id_tarea = t.id_tarea
+            JOIN curso c ON t.id_curso = c.id_curso
+            WHERE e.id_usuario=%s
+        """, (id_usuario,))
+
+        datos = cursor.fetchall()
+        conexion.close()
+
+        if datos:
+            for titulo, curso, descripcion, nota in datos:
+                estado = "Sin calificar" if nota is None else f"Nota: {nota}"
+
+                texto = f"Tarea: {titulo}\n Curso: {curso}\nDesc: {descripcion}\n{estado}"
+
+                ctk.CTkLabel(self, text=texto).pack(pady=5)
         else:
-            messagebox.showerror("Error", "No se pudo guardar")
+            ctk.CTkLabel(self, text="No tienes entregas").pack(pady=10)
+
+        ctk.CTkButton(text="Volver", command=lambda: master.mostrar_panel("estudiante")).pack(pady=10)
 
     
